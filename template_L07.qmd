@@ -1,0 +1,271 @@
+---
+title: "L07 Resampling"
+subtitle: "Foundations of Data Science with R (STAT 359)"
+author: "YOUR NAME"
+
+format:
+  html:
+    toc: true
+    toc-depth: 4
+    embed-resources: true
+    code-fold: show
+    link-external-newwindow: true
+    
+execute:
+  warning: false
+  
+from: markdown+emoji    
+---
+
+::: {.callout-note collapse="true" icon="false"}
+
+## Successful science requires organization!
+
+As we increase the the number of models to train along with the number of times we will be training/fitting the models (resamples!), organization will be critical for carrying out the entire machine learning process. 
+
+Thoughtful organization will help handle the increasing computational demands, streamline the analysis process, and aide in the communication of results.
+
+Thoughtful organization doesn't take one form, but we have provided a start.
+
+:::
+
+::: {.callout-important collapse="true"}
+## When completing your lab write-up
+
+Students must work in an R project connected to a GitHub repository for each lab. The repository should be well organized and it should have all relevant files. Within the project/repo there should be
+
+-   an appropriately named qmd file and
+-   the associated rendered html file (see canvas for naming convention);
+-   there should be multiple R scripts (appropriately named and ordered) completing the work in the labs;
+-   students should create/update README files in GitHub accordingly;
+
+Data processing and model fitting, especially model fitting, can take significant computational time. Re-running time consuming processes when rendering a document is extremely inefficient and must be avoided.
+
+This means students should practice writing these processes in scripts, saving results, and then loading them correctly when needed in their lab write-ups. It sometimes will be necessary to display code (show it, but don't run it) or even hide some code chunks when providing answers in the lab write-up.
+
+Remember to **make this document your own!** Meaning you should play with the layout and think about removing unnecessary sections or items (like this callout box block). Conversely you may end up adding sections or items. Make sure all of your solutions are clearly identified and communicated. 
+:::
+
+::: {.callout-important collapse="true"}
+## Load Package(s) & Setting a Seed
+
+Recall that it is best practice to load your packages towards the top of your document.
+
+Now that we are performing steps that involve randomness (for example data splitting and fitting random forest models) it is best practice to set a seed for the pseudo random algorithms.
+
+**Why?** Because it ensures our random steps are reproducible which has all kinds of practical benefits. Kind of mind blowing to replicate things that are supposed to be random!
+
+Students should set the seed directly before any random process and make a comment/note at the top of any R script that alerts potential users that a random process is being used.
+:::
+
+::: {.callout-tip icon="false"}
+## Github Repo Link
+
+To link to your github **repo**sitory, appropriately edit the example link below. Meaning replace `https://your-github-repo-url` with your github repo url. Suggest verifying the link works before submitting.
+
+[https://your-github-repo-url](https://your-github-repo-url)
+
+:::
+
+## Overview
+
+The goal for this lab is to start using resampling methods to compare models. Ultimately leading to the selection of a final/winning/best model.
+
+This lab covers material up to and including [11. Comparing models with resampling (11.2)](https://www.tmwr.org/compare.html) from [Tidy Modeling with R](https://www.tmwr.org/).
+
+## Data
+
+Once again we will be using the `kc_house_data.csv` dataset found in the `\data` directory. The dataset contains 21,613 house sale prices (`price`) and other information for homes sold between May 2014 and May 2015 in King County, WA. While we should have some familiarity with the dataset, it would be a good idea to take a moment to review/re-read the variable definitions in `kc_house_data_codebook.txt`.
+
+## Exercise
+
+::: {.callout-note icon="false"}
+## Prediction goal
+
+Same as in previous labs, our goal is to predict home sale prices.
+:::
+
+### Tasks
+
+#### Task 1
+
+We have previous experience working with this data and we can use that to get us started.
+
+Start by reading in the  data (`kc_house_data.csv`):
+
+1. We previously determined that we should log-transform (base 10) `price`. This has not changed, so apply the log-transformation to `price` when reading in the data.
+
+2. Leave all other variables be when reading in the data. Meaning, do not re-type anything to factor. `waterfront` is already dummy coded and the others that should be ordered factors can be treated as numerical measures (reported on a numerical scale already). We could do more feature engineering, but for now we will opt to keep it relatively simple. 
+
+Typically we would also perform a quick data assurance check using `skimr::skim_without_charts()` and/or the `naniar` package  to see if there are any major issues. We're mostly checking for missing data problems, but we also look for any obvious read-in issues. We've done this in past labs and we haven't noted any issues so we should be able to proceed.
+
+Split the data into training and testing sets using stratified sampling --- choice of proportion is left to you. 
+
+No display code is required for this task --- we have done this a few times now on previous labs. Only need a confirmation that it has been completed and it what proportion was used for the split.
+
+
+#### Task 2
+
+Fold the training data using repeated V-fold cross-validation (5 folds & 3 repeats). Use stratified sampling when folding the data. 
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- provide display code for graders
+
+:::
+
+#### Task 3
+
+In your own words, **explain what we are doing** in Task 2. What is repeated V-fold cross-validation? Why are we using it? Given our setup, how many times will each model be fitted/trained?
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
+#### Task 4
+
+Looking ahead, we plan on fitting 3 model types: **standard linear**, **random forest**, and **nearest neighbor**. Pre-processing can be the same for the linear regression and the nearest neighbor model, but the random forest model should have a slightly different pre-processing. This means we will need to create 2 recipes/pre-processors.   
+
+Remember, there should be no factor variables. We left them all as numerical when we read in the data --- this is important.  
+
+::: {.callout-note collapse="true" icon="false"}
+## Recipe for standard linear and nearest neighbor
+
+- Predict the target variable with all other variables
+- Do not use `id`, `date`, or `zipcode` as predictors (might have to exclude `price` too, depends on how log-transformation was handled)
+- Log-transform `sqft_living, sqft_lot, sqft_above,  sqft_living15, sqft_lot15`
+- Turn `sqft_basement` into an indicator variable (if greater than 0 house has basement, otherwise it does not have basement),
+- Transform `lat` using a natural spline with 5 degrees of freedom
+- Filter out variables have have zero variance
+- Center and Scale all predictors
+:::
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- provide display code for graders
+
+:::
+
+::: {.callout-note collapse="true" icon="false"}
+## Recipe for random forest
+
+Trees automatically detect non-linear relationships so we don't need the natural spline step (it has been removed). Some of the other steps are not needed (such as Log-transforms, centering, scaling), but can be done since they will not meaningfully change anything. The natural spline step performs a basis expansion, which turns one column into 5 --- which is what causes the issue for the random forest algorithm.
+
+- Predict the target variable with all other variables
+- Do not use `id`, `date`, or `zipcode` as predictors (might have to exclude `price` too, depends on how log-transformation was handled)
+- Log-transform `sqft_living, sqft_lot, sqft_above, sqft_living15, sqft_lot15`
+- Turn `sqft_basement` into an indicator variable (if greater than 0 house has basement, otherwise it does not have basement),
+- Filter out variables have have zero variance
+- Center and Scale all predictors
+:::
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- provide display code for graders
+
+:::
+
+#### Task 5
+
+Set up workflows for 3 models:
+
+1. A linear regression (`linear_reg()`) with the `"lm"` engine,
+2. A random forest (`rand_forest()`) with the `"ranger"` engine setting `min_n = 10` and `trees = 600`. We will use the default value for `mtry`.
+3. A nearest neighbor (`nearest_neighbor()`) with the `kknn` engine setting and `neighbors` set to 20.
+
+We don't need to see the code for all the workflows. Only display the code for the nearest neighbor workflow.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
+#### Task 6
+
+Fit each of the 3 workflows/models created in Task 5 to the folded data. Like Task 5, we do not need to see all workflow fitting/training code. Only display the code for the nearest neighbor fitting. 
+
+::: {.callout-important}
+
+## Important Reminder
+
+Some models, especially random forests, may take a while to run -- anywhere from 3 to 10 minutes. You should **NOT** re-fit these models each time you render. Instead, run them once using an R script, and store your results. 
+
+:::
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
+#### Task 7
+
+Use `collect_metrics()` to get the mean and standard errors of the performance metrics, RMSE and $R^2$, across all folds for each of the 3 models. This information should be displayed in an appropriately formatted table (not just a printed tibble).
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- provide grader with appropriate demonstration of work and output
+
+:::
+
+Decide which of the 3 fitted models has performed the best using RMSE. Explain how you made your decision. *Hint: You should consider both the mean RMSE and its standard error.*
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
+#### Task 8
+
+Now that you've chosen a *best*/winning model (Task 7), fit/train it on the entire training dataset (not to the folds).
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- provide display code for graders
+
+:::
+
+#### Task 9
+
+After fitting/training the best model (Task 8), assess the model's performance using `predict()`, `bind_cols()`, and `rmse()` to assess your model's performance on the **testing** data! 
+
+Compare your model's RMSE on the testing set to its average RMSE across folds.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
+#### Task 10
+
+When assessing a best/winning/final model we are not constrained to the evaluation metric used to select it (meaning used to compare it to others). The selection/competition process is over and we are interested in exploring the final model with whatever tools we have.
+
+- Calculate the RMSE for the final model on the original scale of price (not $log_{10}$ price as in Task 9)? This is useful because the interpretation of the RMSE is now on the original scale of price. Provide an interpretation of this RMSE.
+
+- Assess it using $R^2$, Provide an interpretation.
+
+- Calculate the proportion/percentage of the predicted prices that are within 10% of the original price on the testing set? Is this value surprising or not surprising to you? Explain.
+
+- Build a plot with predicted values verses the true values (on $log_{10}$ scale) --- see Figure 9.2 in Tidy Modeling with R. Could also make this plot on original scale for comparison, but this is not required.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- provide grader with appropriate demonstration of work and output; code could be folded or not shown at all, output is the focus here 
+
+:::
